@@ -1,0 +1,98 @@
+MAIN DE CLIENTE
+- Conexão com o server
+- Logar/criar conta
+- Se logado
+    - Baixar todas as tarefas do usuário
+    - Inserir numa RB por nome
+    - Loop:
+    -   Decisão de que funcionalidade foi acessada
+    -   Função retorna a requisição pro servidor
+    -   Enviar requisição pro servidor (se for o caso)
+    - Repetir loop
+- Se não logado
+    - Voltar para logar/criar conta
+- Ao finalizar
+    - Libera dados
+
+ENVIAR REQUISICAO ✅
+char *sendReq(char *req, char **res);
+- Envia a mensagem
+- Aloca memória pra resposta
+- Retorna a resposta
+
+CRIAÇÃO DE CONTA ✅
+void createAccount(void);
+- Coletar os dados
+- Enviar requisição
+- Imprimir resposta
+
+VERIFICACAO DE LOGIN ✅
+void login(void);
+- Coletar os dados
+- Enviar requisição
+- Imprimir resposta
+
+CADASTRO DE NOVAS TAREFAS
+void createNewTask(RBTree *rb);
+- Coletar dados
+- Enviar requisição pro main
+- Se sucesso
+    - Acrescentar na lista de tarefas na RAM
+
+LISTAR TODAS AS TAREFAS
+void listAllTasks(RBTree *rb);
+- Solicitar status (ou nenhum especifico)
+- Solicitar modo de ordenação
+- Se modo de ordenação for por nome, sem status especifico
+    - Listar tarefas usando a RBTree inicial
+- Inserir todas as tarefas numa arvore binaria rb de acordo com o parametro de ordenacao
+- Listar tarefas
+
+LISTAR TAREFAS
+void listTaskTree(RBTree *rb);
+- Imprimir uma tarefa por vez
+- Para cada tarefa, exibir menu de opções
+
+MENU DE OPÇÕES
+void optionMenu(RBTree *rb);
+- Opções
+    - Atualizar status
+    - Atualizar dados
+    - Deletar dados
+
+DELETAR CONTA DO USUARIO
+- Confirmar que quer deletar
+- Enviar requisição
+- Voltar pra tela de login
+
+FUNÇÕES DE ATUALIZAR
+- Atualizar status: 
+- void updateTaskStatus(RBTree *rb);
+    - Apenas incrementa o status (caso status < 3) ou decrementa (caso status == 3);
+    - Fazer requisição para editar no servidor
+    - Se sucesso: 
+        - Editar na RAM do cliente
+    - Exibir sucesso/não sucesso
+    
+- Atualizar dados: 
+- void updateTaskData(RBTree *rb);
+    - Coletar dados
+    - Fazer requisição para editar no servidor
+    - Se sucesso:
+        - Editar na RAM do cliente
+    - Exibir sucesso/não sucesso
+
+- Deletar dados:
+- void deleteTask(RBTree *rb);
+    - Solicitar confirmação
+    - Fazer requisição para editar no serivodr
+    - Se sucesso:
+        - Deletar na RAM do cliente
+    - Exibir sucesso/não sucesso
+
+BUSCAR TAREFAS
+void searchTasks(RBTree *rb)
+- Solicitar tipo de busca (por id, por descricao) [descricao busca por palavras chaves]
+- Buscar na RAM do cliente
+- Criar arvore rb com todas as tarefas que satisfazem
+- Listar tarefas
