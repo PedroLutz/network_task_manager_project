@@ -148,10 +148,8 @@ bool fileUserDeleteById(int id){
     if (found) {
         remove("files/users.bin");
         rename("files/tempUsers.bin", "files/users.bin");
-        puts("User deleted successfully.");
     } else {
         remove("files/tempUsers.bin");
-        puts("User not found.");
     }
 
     pthread_rwlock_unlock(&rwlockUsers);

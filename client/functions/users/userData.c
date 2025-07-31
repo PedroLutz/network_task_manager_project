@@ -11,7 +11,9 @@ bool login(char **err, USER *user){
     char userName[50];
     char password[50];
 
-    loginUI(userName, password);
+    if(!loginUI(userName, password)){
+        return false;
+    }
 
     char reqData[256]; 
     snprintf(reqData, sizeof(reqData), "userName:%s;password:%s", userName, password);
@@ -19,26 +21,26 @@ bool login(char **err, USER *user){
 
     if(!buildReq(TABLE_USERS, MODE_GET, reqData, &req)){
         *err = strdup("Error while generating request!");
-        return false;
+        return true;
     }
 
     char *res;
     if(!sendReq(req, &res)){
         *err = strdup("Error while sending the request!");
         free(req);
-        return false;
+        return true;
     }
 
     if(strcmp(res, "userName_notFound") == 0){
         *err = strdup("This username is not registered!");
         free(req); free(res); 
-        return false;
+        return true;
     }
 
     if(strcmp(res, "password_wrong") == 0){
         *err = strdup("Wrong password!");
         free(req); free(res); 
-        return false;
+        return true;
     }
 
     char *token;
@@ -53,20 +55,23 @@ bool login(char **err, USER *user){
     } else {
         *err = strdup("Error while receiving server response!");
         free(req); free(res); 
-        return false;
+        return true;
     }
 
+    *err = NULL;
     free(req);
     free(res);
     return true;
 }
 
-void createAccount(char **msg){
+bool createAccount(char **msg){
     char userName[50];
     char password[50];
     char r_password[50];
 
-    createAccountUI(userName, password, r_password);
+    if(!createAccountUI(userName, password, r_password)){
+        return false;
+    }
 
     char reqData[256]; 
     snprintf(reqData, sizeof(reqData), "userName:%s;password:%s", userName, password);
@@ -74,35 +79,35 @@ void createAccount(char **msg){
 
     if(!buildReq(TABLE_USERS, MODE_CREATE, reqData, &req)){
         *msg = strdup("Error while generating request!");
-        return;
+        return true;
     }
 
     char *res;
     if(!sendReq(req, &res)){
         *msg = strdup("Error while sending the request!");
         free(req);
-        return;
+        return true;
     }
 
     if(strcmp(res, "userName_exists") == 0){
         *msg = strdup("This username is already registered!");
         free(req); free(res); 
-        return;
+        return true;
     }
 
     if(strcmp(res, "create_fail") == 0){
         *msg = strdup("Error while creating the account!");
         free(req); free(res); 
-        return;
+        return true;
     }
 
     if(strcmp(res, "create_success") == 0){
         *msg = strdup("Account created successfully!");
         free(req); free(res); 
-        return;
+        return true;
     }
 
     *msg = strdup("Error while receiving server response!");
     free(req); free(res); 
-    return;
+    return true;
 }

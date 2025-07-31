@@ -7,6 +7,7 @@ OBJ = client.o \
 	  functions/users/userUI.o \
 	  functions/tasks/taskData.o \
 	  functions/tasks/taskRbTree.o \
+	  functions/tasks/taskUI.o \
 
 all: client
 

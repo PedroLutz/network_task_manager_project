@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <string.h>
 #include "./functions/general/structs.h"
 #include "./functions/users/userData.h"
 #include "./functions/general/ui.h"
@@ -30,16 +31,20 @@ void loggedOutMenu(void){
     char *msg = NULL;
     switch(option){   
         case 1: 
-        if(!login(&msg, &loggedUser)){
-            printMessage(msg);
-            free(msg);
+        if(login(&msg, &loggedUser)){
+            if(msg != NULL){
+                printMessage(msg);
+                free(msg);
+            }
         }      
         break;
 
         case 2:
-        createAccount(&msg);
-        printMessage(msg);
-        free(msg);
+        if(createAccount(&msg)){
+            printMessage(msg);
+            free(msg);
+        };
+        
         break;
 
         case 3:
@@ -60,11 +65,22 @@ void loggedInMenu(void){
         "Delete user data",
         "Exit");
 
+        char *msg;
+
         switch(option){
-            case 5:
+            case 1:
+            if(createTask(loggedUser.id, &tree_tasksSortedById, &msg)){
+                printMessage(msg);
+                free(msg);
+            }
+            break;
+
+            case 2:
+            viewAllTasks(&tree_tasksSortedById);
             break;
 
             case 6:
+            treeFree(tree_tasksSortedById);
             exit(0);
             break;
 
@@ -84,6 +100,7 @@ int main(){
         char *err;
         if(!taskGetUserTasks(loggedUser.id, &tree_tasksSortedById, &err)){
             printMessage(err);
+            free(err);
             exit(0);
         }
 

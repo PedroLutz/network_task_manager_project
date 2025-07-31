@@ -47,7 +47,9 @@ void handleTaskReq(char *buffer, char **response){
             if(lastId < 0) lastId = 0;
             task.id = lastId + 1;
             if(fileTaskCreate(&task)){
-                *response = strdup("create_success");
+                char temp[128];
+                sprintf(temp, "create_success|id:%d", task.id);
+                *response = strdup(temp);
                 fileTaskSetLastId(task.id);
             } else {
                 *response = strdup("create_fail");

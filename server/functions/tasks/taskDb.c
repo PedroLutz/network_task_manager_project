@@ -235,10 +235,8 @@ bool fileTaskDeleteById(int id){
     if (found) {
         remove("files/tasks.bin");
         rename("files/tempTasks.bin", "files/tasks.bin");
-        puts("User deleted successfully.");
     } else {
         remove("files/tempTasks.bin");
-        puts("User not found.");
     }
 
     pthread_rwlock_unlock(&rwlockTasks);

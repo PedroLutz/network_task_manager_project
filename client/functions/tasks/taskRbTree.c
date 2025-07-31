@@ -115,6 +115,30 @@ static void adjustInsertion(NODE **root, NODE *node)
     (*root)->color = BLACK;
 }
 
+static bool compareTasks(TASK *t1, TASK *t2, ORDER_MODE orderMode)
+{
+    if (orderMode == ID)
+    {
+        return t1->id < t2->id;
+    }
+    else if (orderMode == NAME)
+    {
+        return strcmp(t1->description, t2->description) < 0;
+    }
+    else if (orderMode == PRIORITY)
+    {
+        if (t1->priority == t2->priority)
+        {
+            return strcmp(t1->description, t2->description) < 0;
+        }
+        else
+        {
+            return t1->priority > t2->priority;
+        }
+    }
+    return false;
+}
+
 void treeInsert(NODE **root, TASK *task, ORDER_MODE orderMode)
 {
     NODE *node = createNode(task);
@@ -125,7 +149,7 @@ void treeInsert(NODE **root, TASK *task, ORDER_MODE orderMode)
     {
         y = x;
 
-        bool isNodeSmallerThanX = orderMode == ID ? node->task->id < x->task->id : strcmp(node->task->description, x->task->description) < 0;
+        bool isNodeSmallerThanX = compareTasks(node->task, x->task, orderMode);
 
         if (isNodeSmallerThanX)
             x = x->left;
@@ -141,9 +165,7 @@ void treeInsert(NODE **root, TASK *task, ORDER_MODE orderMode)
     }
     else
     {
-        bool isNodeSmallerThanY = orderMode == ID ? 
-        node->task->id < y->task->id : 
-        strcmp(node->task->description, y->task->description) < 0;
+        bool isNodeSmallerThanY = compareTasks(node->task, y->task, orderMode);
 
         if (isNodeSmallerThanY)
             y->left = node;
@@ -154,125 +176,247 @@ void treeInsert(NODE **root, TASK *task, ORDER_MODE orderMode)
     adjustInsertion(root, node);
 }
 
-bool treeSearchById(NODE *root, NODE** found, int id){
-    if(root == NULL){
+bool treeSearchById(NODE *root, NODE **found, int id)
+{
+    if (root == NULL)
+    {
         *found = NULL;
         return false;
-    } 
+    }
 
-    if(root->task->id == id){
+    if (root->task->id == id)
+    {
         *found = root;
         return true;
-    } else if (root->task->id > id)
+    }
+    else if (root->task->id > id)
     {
         return treeSearchById(root->left, found, id);
-    } else
+    }
+    else
     {
         return treeSearchById(root->right, found, id);
     }
 }
 
-static NODE* sibling(NODE* node) {
-    if (node->parent == NULL) return NULL;
+static NODE *sibling(NODE *node)
+{
+    if (node->parent == NULL)
+        return NULL;
     return (node == node->parent->left) ? node->parent->right : node->parent->left;
 }
 
-static bool isBlack(NODE* node) {
+static bool isBlack(NODE *node)
+{
     return node == NULL || node->color == BLACK;
 }
 
-static bool isRed(NODE* node) {
+static bool isRed(NODE *node)
+{
     return node != NULL && node->color == RED;
 }
 
-static void swapColors(NODE* a, NODE* b) {
+static void swapColors(NODE *a, NODE *b)
+{
     COLOR temp = a->color;
     a->color = b->color;
     b->color = temp;
 }
 
-static NODE* correctDoubleBlack(NODE* raiz, NODE* node) {
-    if (node == NULL) return raiz;
+static NODE *correctDoubleBlack(NODE *root, NODE *node)
+{
+    if (node == NULL)
+        return root;
 
-    NODE* siblingNode = sibling(node);
+    NODE *siblingNode = sibling(node);
+    if (siblingNode == NULL)
+        return root;
 
-    if (isRed(siblingNode)) {
+    if (isRed(siblingNode))
+    {
         swapColors(node->parent, siblingNode);
         if (siblingNode == node->parent->right)
-            rotateLeft(&raiz, node->parent);
+            rotateLeft(&root, node->parent);
         else
-            rotateRight(&raiz, node->parent);
+            rotateRight(&root, node->parent);
         siblingNode = sibling(node);
     }
 
-    if (isBlack(siblingNode->left) && isBlack(siblingNode->right)) {
+    if (isBlack(siblingNode->left) && isBlack(siblingNode->right))
+    {
         siblingNode->color = RED;
-        if (node->parent->color == RED) {
+        if (node->parent->color == RED)
+        {
             node->parent->color = BLACK;
-        } else {
-            raiz = correctDoubleBlack(raiz, node->parent);
+        }
+        else
+        {
+            root = correctDoubleBlack(root, node->parent);
         }
     }
 
-    else {
-        if (siblingNode == node->parent->right) {
-            if (isBlack(siblingNode->right)) {
+    else
+    {
+        if (siblingNode == node->parent->right)
+        {
+            if (isBlack(siblingNode->right))
+            {
                 swapColors(siblingNode, siblingNode->left);
-                rotateRight(&raiz, siblingNode);
+                rotateRight(&root, siblingNode);
                 siblingNode = node->parent->right;
             }
             swapColors(node->parent, siblingNode);
             siblingNode->right->color = BLACK;
-            rotateLeft(&raiz, node->parent);
-        } else {
-            if (isBlack(siblingNode->left)) {
+            rotateLeft(&root, node->parent);
+        }
+        else
+        {
+            if (isBlack(siblingNode->left))
+            {
                 swapColors(siblingNode, siblingNode->right);
-                rotateLeft(&raiz, siblingNode);
+                rotateLeft(&root, siblingNode);
                 siblingNode = node->parent->left;
             }
             swapColors(node->parent, siblingNode);
             siblingNode->left->color = BLACK;
-            rotateRight(&raiz, node->parent);
+            rotateRight(&root, node->parent);
         }
     }
 
-    return raiz;
+    return root;
 }
 
-NODE* treeRemoveNode(NODE* raiz, NODE* node) {
-    NODE* child = (node->left != NULL) ? node->left : node->right;
+static NODE *minimumNode(NODE *node)
+{
+    while (node->left != NULL)
+        node = node->left;
+    return node;
+}
 
-    if (node->parent == NULL) {
-        raiz = child;
-        if (child != NULL) child->parent = NULL;
+NODE *treeRemoveNode(NODE *root, NODE *node)
+{
+
+    if (node->left && node->right)
+    {
+        NODE *successor = minimumNode(node->right);
+
+        TASK *temp = node->task;
+        node->task = successor->task;
+        successor->task = temp;
+
+        root = treeRemoveNode(root, successor);
+        return root;
+    }
+    
+    NODE *child = (node->left != NULL) ? node->left : node->right;
+
+    if (node->parent == NULL)
+    {
+        root = child;
+        if (child != NULL)
+            child->parent = NULL;
         free(node);
-        if (raiz != NULL) raiz->color = BLACK;
-        return raiz;
+        if (root != NULL)
+            root->color = BLACK;
+        return root;
     }
 
-    if (isRed(node) || isRed(child)) {
-        if (node == node->parent->left) node->parent->left = child;
-        else node->parent->right = child;
-        if (child != NULL) {
+    if (isRed(node) || (child != NULL && isRed(child)))
+    {
+        if (node == node->parent->left)
+            node->parent->left = child;
+        else
+            node->parent->right = child;
+        if (child != NULL)
+        {
             child->parent = node->parent;
             child->color = RED;
         }
         free(node);
-        return raiz;
+        return root;
     }
 
-    NODE* parent = node->parent;
-    if (node == parent->left) parent->left = NULL;
-    else parent->right = NULL;
+    NODE *parent = node->parent;
+    if (node == parent->left)
+        parent->left = NULL;
+    else
+        parent->right = NULL;
     free(node);
 
-    raiz = correctDoubleBlack(raiz, parent);
-    return raiz;
+    root = correctDoubleBlack(root, parent);
+    return root;
 }
 
-void treeFree(NODE* root) {
-    if (root == NULL) return;
+void printTree(NODE *root)
+{
+    if (root == NULL)
+        return;
+    printTree(root->left);
+    TASK *task = root->task;
+    printf("%d %d %s\n", task->id, task->priority, task->description);
+    printTree(root->right);
+}
+
+void treeFree(NODE *root)
+{
+    if (root == NULL)
+        return;
     treeFree(root->left);
     treeFree(root->right);
     free(root);
+}
+
+void treeCountNodes(NODE *root, int *counter)
+{
+    if (root == NULL)
+        return;
+
+    treeCountNodes(root->left, counter);
+    (*counter)++;
+    treeCountNodes(root->right, counter);
+}
+
+NODE *treeClone(NODE *root)
+{
+    if (root == NULL)
+        return NULL;
+
+    NODE *newNode = malloc(sizeof(NODE));
+    if (!newNode)
+        return NULL;
+
+    newNode->task = malloc(sizeof(TASK));
+    newNode->task->id = root->task->id;
+    strcpy(newNode->task->description, root->task->description);
+    newNode->task->priority = root->task->priority;
+    newNode->task->status = root->task->status;
+    newNode->task->userId = root->task->userId;
+
+    newNode->color = root->color;
+    newNode->left = treeClone(root->left);
+    newNode->right = treeClone(root->right);
+    newNode->parent = NULL;
+
+    if (newNode->left)
+        newNode->left->parent = newNode;
+    if (newNode->right)
+        newNode->right->parent = newNode;
+
+    return newNode;
+}
+
+NODE *treeGetNodeByIndex(NODE *root, int *currentIndex, int targetIndex)
+{
+    if (root == NULL)
+        return NULL;
+
+    NODE *left = treeGetNodeByIndex(root->left, currentIndex, targetIndex);
+    if (left != NULL)
+        return left;
+
+    (*currentIndex)++;
+    if (*currentIndex == targetIndex)
+        return root;
+
+    return treeGetNodeByIndex(root->right, currentIndex, targetIndex);
 }

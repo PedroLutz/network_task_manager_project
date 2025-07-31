@@ -5,6 +5,6 @@
 #include <stdbool.h>
 
 bool login(char **err, USER *user);
-void createAccount(char **msg);
+bool createAccount(char **msg);
 
 #endif
