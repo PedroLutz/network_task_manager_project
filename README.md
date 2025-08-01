@@ -1,34 +1,34 @@
 # Task List Management System with Client-Server in C
 
-This is a project developed in C that implements a Task List Management system, utilizing TCP sockets for client-server communication. The server supports multiple concurrent conections, task ordering, data manipulation and file persistence.
+This project is a task list management system developed in C, using TCP sockets for client-server communication. The server supports multiple concurrent connections, task organization, data manipulation, and file persistence.
 
 # Functionalities
 
 ### Client
 - Interface via terminal (Simple and organized UI)
 - Local task storage using Red-Black Trees
-- Multiple ordering modes (ID, description, priority)
-- Server communication via TCP
+- Multiple sorting modes (ID, description, priority)
+- Communication with the server via TCP
 
 ### Server
-- Local user storage using a Hash Table
+- Local user storage using a hash table
 - File manipulation for data persistence
 - Multiple concurrent connections using `pthreads`
-- Access controlled with `mutex` to avoid race conditions
-- Reliable communication using TCP sockets
+- Thread-safe access using `mutex` to avoid race conditions
+- Reliable communication through TCP sockets
 
 ## Tecnologies and applied concepts
 - C Programming Language
 - Sockets TCP/IP
-- Threads with `pthreads`
-- Syncing with `mutex`
-- Hash Table (server)
-- Red-Black Trees (client)
-- Dynamic memory allocation and liberation
-- C file manipulation (`fopen`, `fread`, `fwrite`, etc.)
+- Multithreading with `pthreads`
+- Synchronization with `mutex`
+- Hash Table (server-side)
+- Red-Black Trees (client-side)
+- Dynamic memory allocation and deallocation
+- File I/O in C (`fopen`, `fread`, `fwrite`, etc.)
 
 ## How to run
-***This system only runs on Linux.***
+***This system runs on Linux only.***
 ### Server
 ```bash
 cd server
@@ -45,22 +45,22 @@ Obs: Server and client must be connected to the same network or with IP properly
 
 ## Tests and Validation
 - Tested with multiple clients simultaneously
-- Checked with `valgrind` to ensure lack of memory leakages
-- Error cases treated with clear terminal messages
+- Checked with `valgrind` to ensure no memory leaks
+- Error cases handled with clear terminal messages
 
 ## Learnings
-This project helped me apply fundamental and advanced concepts in C, with a focus on:
+This project helped me apply both fundamental and advanced concepts in C, with a focus on:
 - Efficient data structures
 - Concurrency and parallelism
-- Network communication with sockets
+- Network communication using sockets
 - Manual memory management
-- Quick responses from server to client
+- Fast server-client response handling
 
 ## Possible future improvements
-- Cryptographed user passwords
+- Encrypted user passwords
 - Graphic interface or web integration
-- Server activity logs
-- Docker deployment
+- Server activity logging
+- Docker-based deployment
 
 # Author
 - **Pedro Guilherme Rosa Lutz**
