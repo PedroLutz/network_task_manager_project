@@ -9,7 +9,8 @@
 #include "userDb.h"
 #include "userReqHandler.h"
 
-void handleUserReq(char *buffer, char **response){
+void handleUserReq(char *buffer, char **response)
+{
     char *modeStr = strtok(buffer, "|");
     char *data = strtok(NULL, "");
 
@@ -19,13 +20,21 @@ void handleUserReq(char *buffer, char **response){
     int id = -1;
     char userName[50] = "";
     char password[50] = "";
-    
-    if(data != NULL){
+
+    if (data != NULL)
+    {
         char *token = strtok(data, ";");
-        while(token != NULL){
-            if (sscanf(token, "id:%d", &id)) {}
-            else if (sscanf(token, "userName:%49[^;]", userName)) {}
-            else if (sscanf(token, "password:%49[^;]", password)) {}
+        while (token != NULL)
+        {
+            if (sscanf(token, "id:%d", &id))
+            {
+            }
+            else if (sscanf(token, "userName:%49[^;]", userName))
+            {
+            }
+            else if (sscanf(token, "password:%49[^;]", password))
+            {
+            }
             token = strtok(NULL, ";");
         }
     }
@@ -39,53 +48,78 @@ void handleUserReq(char *buffer, char **response){
     strncpy(user.password, password, sizeof(user.password));
     user.password[sizeof(user.password) - 1] = '\0';
 
-    switch(parsedMode){
-        case MODE_CREATE: {
-            int lastId = fileUserFindLastId();
-            if(lastId < 0) lastId = 0;
-            user.id = lastId + 1;
+    switch (parsedMode)
+    {
+    case MODE_CREATE:
+    {
+        int lastId = fileUserFindLastId();
+        if (lastId < 0)
+            lastId = 0;
+        user.id = lastId + 1;
 
-            if(userCache_search(user.userName)){
-                *response = strdup("userName_exists");
-                break;
-            }
-            
-            bool created = fileUserCreate(&user);
-            bool inserted = userCache_insert(user);
-
-            if(!created || !inserted){
-                *response = strdup("create_fail");
-                break;
-            }
-
-            fileUserSetLastId(user.id);
-            *response = strdup("create_success"); //strdup() automatically allocs and inserts a string into a char*
+        if (userCache_search(user.userName))
+        {
+            *response = strdup("userName_exists");
             break;
         }
-        case MODE_UPDATE: {
-            if(fileUserUpdate(&user, id)){
-                userCache_update(user);
-                *response = strdup("update_success");
-            } else {
-                *response = strdup("update_fail");
-            }
-            break;
-        }
-        case MODE_DELETE:
-            const char *res1 = fileUserDeleteById(id) ? "delete_success_" : "delete_fail_";
-            const char *res2 = fileTaskDeleteByUser(id) ? "delete_tasks_success" : "delete_tasks_fail";
 
-            size_t len = strlen(res1) + strlen(res2) + 1;
-            *response = malloc(len);
-            if (*response)
-                snprintf(*response, len, "%s%s", res1, res2);
+        bool created = fileUserCreate(&user);
+        bool inserted = userCache_insert(user);
+
+        if (!created || !inserted)
+        {
+            *response = strdup("create_fail");
             break;
-        case MODE_GET:
-            userCache_checkLogin(user, response);
-            break;
-        default:{
-            puts("Invalid request");
-            *response = strdup("invalid_request");
         }
+
+        fileUserSetLastId(user.id);
+        *response = strdup("create_success");
+        break;
+    }
+    case MODE_UPDATE:
+    {
+        if (userCache_search(user.userName))
+        {
+            *response = strdup("userName_exists");
+            break;
+        }
+
+        if (fileUserUpdate(&user, id))
+        {
+            userCache_update(user);
+            *response = strdup("update_success");
+        }
+        else
+        {
+            *response = strdup("update_fail");
+        }
+        break;
+    }
+    case MODE_DELETE:
+        char res1[50];
+        if (fileUserDeleteById(id))
+        {
+            strcpy(res1, "delete_success;");
+            userCache_remove(id);
+        }
+        else
+        {
+            strcpy(res1, "delete_fail;");
+        }
+        const char *res2 = fileTaskDeleteByUser(id) ? "delete_tasks_success" : "delete_tasks_fail";
+
+        size_t len = strlen(res1) + strlen(res2) + 1;
+        *response = malloc(len);
+        if (*response)
+            snprintf(*response, len, "%s%s", res1, res2);
+        break;
+    case MODE_GET:
+        userCache_checkLogin(user, response);
+        break;
+    default:
+    {
+        puts("Invalid request");
+        *response = strdup("invalid_request");
+    }
     }
 }

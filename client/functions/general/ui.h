@@ -20,5 +20,6 @@ void cleanBuffer(void);
 void getText(char *str, int size);
 void printMessage(char *msg);
 bool getInputLine(char *buffer, size_t size);
+bool confirmationMenu(char *label);
 
 #endif

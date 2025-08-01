@@ -42,6 +42,7 @@ char getch() {
 
 bool getInputLine(char *buffer, size_t size) {
     size_t index = 0;
+    printf("\033[s");
     printf("\033[u \b");
     fflush(stdout);
     
@@ -121,6 +122,59 @@ int generateMenu(int numOptions, ...){
             return option;
         }
     }
+}
+
+bool confirmationMenu(char *label){
+    int option = 1;
+    printf("\033[H");
+    cleanScreen();
+    mprintf("%s\n\n", label);
+    printf("\033[s");
+    mprintf("Yes\n");
+    mprintf("No\n");
+    printf("\033[2B");
+    mprintf("Use arrow up or down to select the option");
+    printf("\033[u");
+    printf("\033[32m  ->\033[0m");
+
+    disableEcho();
+
+    while (1)
+    {
+        char c = getchar();
+        printf("\033[5D");
+        if (c == '\033')
+        {
+            char c2 = getchar();
+            char c3 = getchar();
+            if (c2 == '[')
+            {
+                if (c3 == 'A')
+                {
+                    if (option > 1)
+                    {
+                        option--;
+                        printf("     \r\033[1A\033[32m  ->\033[0m");
+                    }
+                }
+                else if (c3 == 'B')
+                {
+                    if (option < 2)
+                    {
+                        option++;
+                        printf("     \r\033[1B\033[32m  ->\033[0m");
+                    }
+                }
+            }
+        }
+        else if (c == '\n')
+        {
+            enableEcho();
+            break;
+        }
+    }
+
+    return option == 1;
 }
 
 void cleanScreen(void){

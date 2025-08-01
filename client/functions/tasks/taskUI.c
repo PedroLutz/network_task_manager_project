@@ -44,6 +44,7 @@ bool createTaskUI(TASK *task)
             strcpy(t.description, "");
         }
 
+        printf("\033[u");
         if (!getInputLine(t.description, sizeof(t.description)))
         {
             return false;
@@ -115,6 +116,9 @@ int generateTaskMenuFromRB(NODE *root, int numNodes){
     int option = 0;
     printf("\033[H");
     cleanScreen();
+    if(numNodes == 0){
+        mprintf("(no tasks found)\n");
+    }
     printf("\033[s");
     mprintf("Exit\n");
     for(int i = 1; i <= numNodes; i++){
@@ -153,4 +157,83 @@ int generateTaskMenuFromRB(NODE *root, int numNodes){
             return option;
         }
     }
+}
+
+bool searchByIdUI(int *targetId){
+    char warning[50] = "";
+    char id[20];
+
+    while (1)
+    {
+        cleanScreen();
+        mprintf("Press ESC to exit\n");
+        mprintf("Type the target id: ");
+        printf("\033[s");
+
+        printf("\n\033[2B\033[5D");
+        if (strlen(warning) > 0)
+        {
+            mprintf("%s\n", warning);
+            
+            strcpy(warning, "");
+        }
+
+        printf("\033[u");
+        if (!getInputLine(id, sizeof(id)))
+        {
+            return false;
+        }
+
+        if (strlen(id) == 0)
+        {
+            strcpy(warning, "Please type a valid id!");
+            continue;
+        }
+
+        *targetId = atoi(id);
+
+        break;
+    }
+
+    return true;
+}
+
+
+bool searchByKeywordUI(char targetKeyword[100]){
+    char warning[50] = "";
+    char keyword[100];
+
+    while (1)
+    {
+        cleanScreen();
+        mprintf("Press ESC to exit\n");
+        mprintf("Write the target keyword: ");
+        printf("\033[s");
+
+        printf("\n\033[2B\033[5D");
+        if (strlen(warning) > 0)
+        {
+            mprintf("%s\n", warning);
+            
+            strcpy(warning, "");
+        }
+
+        printf("\033[u");
+        if (!getInputLine(keyword, sizeof(keyword)))
+        {
+            return false;
+        }
+
+        if (strlen(keyword) == 0)
+        {
+            strcpy(warning, "Please type a valid keyword!");
+            continue;
+        }
+
+        strcpy(targetKeyword, keyword);
+
+        break;
+    }
+
+    return true;
 }

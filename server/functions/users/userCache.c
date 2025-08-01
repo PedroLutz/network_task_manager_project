@@ -77,10 +77,31 @@ void userCache_update(USER newData){
         NODE *pNodeAux = hashTable[i];
         while(pNodeAux != NULL){
             if(pNodeAux->user->id == newData.id){
-                hashRemove(pNodeAux->user->userName, hashTable);
+                char oldName[50];
+                strncpy(oldName, pNodeAux->user->userName, sizeof(oldName));
+                oldName[sizeof(oldName) - 1] = '\0';
+
+                hashRemove(oldName, hashTable);
                 if(hashInsert(newData, hashTable) == false){
                     return;
                 }
+                found = true;
+                break;
+            }
+
+            pNodeAux = pNodeAux->next;
+        }
+        if(found) break;
+    }
+}
+
+void userCache_remove(int id){
+     bool found = false;
+    for(int i = 0; i < TABLE_SIZE; i++){
+        NODE *pNodeAux = hashTable[i];
+        while(pNodeAux != NULL){
+            if(pNodeAux->user->id == id){
+                hashRemove(pNodeAux->user->userName, hashTable);
                 found = true;
                 break;
             }

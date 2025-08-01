@@ -79,6 +79,26 @@ void loggedInMenu(void){
             viewAllTasks(&tree_tasksSortedById);
             break;
 
+            case 3:
+            searchTasks(&tree_tasksSortedById);
+            break;
+
+            case 4:
+            if(updateAccount(&loggedUser, &msg)){
+                printMessage(msg);
+                free(msg);
+            };
+            break;
+
+            case 5:
+            if(deleteAccount(&loggedUser, &msg)){
+                printMessage(msg);
+                free(msg);
+                treeFree(tree_tasksSortedById);
+                loggedUser.id = -1;
+            }
+            break;
+
             case 6:
             treeFree(tree_tasksSortedById);
             exit(0);
@@ -96,6 +116,8 @@ int main(){
         while(loggedUser.id == -1){
             loggedOutMenu();
         }
+
+        tree_tasksSortedById = NULL;
 
         char *err;
         if(!taskGetUserTasks(loggedUser.id, &tree_tasksSortedById, &err)){

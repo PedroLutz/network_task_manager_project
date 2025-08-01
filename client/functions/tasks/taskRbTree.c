@@ -363,6 +363,7 @@ void treeFree(NODE *root)
         return;
     treeFree(root->left);
     treeFree(root->right);
+    free(root->task);
     free(root);
 }
 

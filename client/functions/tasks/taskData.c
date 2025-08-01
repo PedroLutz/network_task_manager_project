@@ -171,22 +171,35 @@ bool createTask(int userID, NODE **root, char **msg)
     return true;
 }
 
-static void createSubTree(NODE *baseRoot, NODE **targetRoot, STATUS status, ORDER_MODE orderMode)
+static TASK* taskClone(TASK *original) {
+    if (!original) return NULL;
+
+    TASK *clone = malloc(sizeof(TASK));
+    if (!clone) return NULL;
+
+    *clone = *original;  
+
+    return clone;
+}
+
+static void createSubTree(NODE *baseRoot, NODE **targetRoot, STATUS status, ORDER_MODE orderMode, TaskCondition condition, void *context)
 {
     if (baseRoot == NULL)
     {
         return;
     }
 
-    createSubTree(baseRoot->left, targetRoot, status, orderMode);
-
-    bool isTargetStatus = status < 4 ? baseRoot->task->status == status : true;
-    if (isTargetStatus)
-    {
-        treeInsert(targetRoot, baseRoot->task, orderMode);
+    createSubTree(baseRoot->left, targetRoot, status, orderMode, condition, context);
+    bool isTargetStatus = true;
+    if(status != 0){
+        isTargetStatus = baseRoot->task->status == status;
+    }
+    if((condition == NULL || condition(baseRoot->task, context)) && isTargetStatus){
+        TASK *clone = taskClone(baseRoot->task);
+        treeInsert(targetRoot, clone, orderMode);
     }
 
-    createSubTree(baseRoot->right, targetRoot, status, orderMode);
+    createSubTree(baseRoot->right, targetRoot, status, orderMode, condition, context);
 }
 
 static bool sendUpdateReq(char *reqData, char **msg)
@@ -282,100 +295,171 @@ static bool updateTask(TASK *task, char **msg)
 
 static bool deleteTask(TASK *task, char **msg)
 {
-    int option = 1;
-    printf("\033[H");
-    cleanScreen();
-    mprintf("Are you sure you want to delete this task?\n\n");
-    printf("\033[s");
-    mprintf("Yes\n");
-    mprintf("No\n");
-    printf("\033[2B");
-    mprintf("Use arrow up or down to select the option");
-    printf("\033[u");
-    printf("\033[32m  ->\033[0m");
-
-    disableEcho();
-
-    while (1)
+    if (!confirmationMenu("Are you sure you want to delete this task?"))
     {
-        char c = getchar();
-        printf("\033[5D");
-        if (c == '\033')
-        {
-            char c2 = getchar();
-            char c3 = getchar();
-            if (c2 == '[')
-            {
-                if (c3 == 'A')
-                {
-                    if (option > 1)
-                    {
-                        option--;
-                        printf("     \r\033[1A\033[32m  ->\033[0m");
-                    }
-                }
-                else if (c3 == 'B')
-                {
-                    if (option < 2)
-                    {
-                        option++;
-                        printf("     \r\033[1B\033[32m  ->\033[0m");
-                    }
-                }
-            }
-        }
-        else if (c == '\n')
-        {
-            enableEcho();
-            break;
-        }
+        return false;
+    }
+    char reqData[512];
+    snprintf(reqData, sizeof(reqData),
+             "id:%d",
+             task->id);
+
+    char *req;
+
+    if (!buildReq(TABLE_TASKS, MODE_DELETE, reqData, &req))
+    {
+        *msg = strdup("Error while generating request!");
+        return false;
     }
 
-    if (option == 1)
+    char *res;
+    if (!sendReq(req, &res))
     {
-        char reqData[512];
-        snprintf(reqData, sizeof(reqData),
-                 "id:%d",
-                 task->id);
+        *msg = strdup("Error while sending the request!");
+        free(req);
+        return false;
+    }
 
-        char *req;
-
-        if (!buildReq(TABLE_TASKS, MODE_DELETE, reqData, &req))
-        {
-            *msg = strdup("Error while generating request!");
-            return false;
-        }
-
-        char *res;
-        if (!sendReq(req, &res))
-        {
-            *msg = strdup("Error while sending the request!");
-            free(req);
-            return false;
-        }
-
-        if (strcmp(res, "delete_fail") == 0)
-        {
-            *msg = strdup("Error while deleting the task!");
-            free(req);
-            free(res);
-            return false;
-        }
-
-        if (strcmp(res, "delete_success") == 0)
-        {
-            free(req);
-            free(res);
-            return true;
-        }
-
-        *msg = strdup("Error while receiving server response!");
+    if (strcmp(res, "delete_fail") == 0)
+    {
+        *msg = strdup("Error while deleting the task!");
         free(req);
         free(res);
         return false;
     }
 
+    if (strcmp(res, "delete_success") == 0)
+    {
+        free(req);
+        free(res);
+        return true;
+    }
+
+    *msg = strdup("Error while receiving server response!");
+    free(req);
+    free(res);
     return false;
+}
+
+static void viewTaskSubtree(NODE **root, NODE **subTree, int status, ORDER_MODE orderMode){
+    while (1)
+    {
+        int numNodes = 0;
+        treeCountNodes(*subTree, &numNodes);
+        int task = generateTaskMenuFromRB(*subTree, numNodes);
+
+        if (task == 0)
+        {
+            return;
+        }
+
+        int currentIndex = 0;
+        NODE *selectedNode = treeGetNodeByIndex(*subTree, &currentIndex, task);
+        TASK *selectedTask = selectedNode->task;
+
+        int option = generateMenu(4,
+                                  "Update status",
+                                  "Update task data",
+                                  "Delete task",
+                                  "Go back");
+
+        char *msg = NULL;
+
+        switch (option)
+        {
+        case 1:
+        {
+            STATUS finalStatus;
+            if (!updateStatus(selectedTask, &msg, &finalStatus))
+            {
+                printMessage(msg);
+                free(msg);
+            }
+            else
+            {
+                NODE *originalNode = NULL;
+                treeSearchById(*root, &originalNode, selectedTask->id);
+                if (originalNode != NULL){
+                    *originalNode->task = *selectedTask;
+                }
+                if (status != 0)
+                {
+                    if ((int)finalStatus != status)
+                    {
+                        free(selectedNode->task);
+                        *subTree = treeRemoveNode(*subTree, selectedNode);
+                    }
+                }
+            }
+            break;
+        }
+
+        case 2:
+        {
+            if (!updateTask(selectedTask, &msg))
+            {
+                if (msg != NULL)
+                {
+                    printMessage(msg);
+                    free(msg);
+                }
+                break;
+            }
+            *subTree = treeRemoveNode(*subTree, selectedNode);
+
+            TASK *copy = malloc(sizeof(TASK));
+            *copy = *selectedTask;
+
+            NODE *originalNode = NULL;
+            treeSearchById(*root, &originalNode, selectedTask->id);
+            if (originalNode != NULL)
+            {
+                free(originalNode->task);
+                *root = treeRemoveNode(*root, originalNode);
+            }
+
+            treeInsert(subTree, selectedTask, orderMode);
+            treeInsert(root, copy, orderMode);
+            break;
+        }
+
+        case 3:
+        {
+            if (deleteTask(selectedTask, &msg))
+            {
+                free(selectedNode->task);
+                *subTree = treeRemoveNode(*subTree, selectedNode);
+
+                NODE *originalNode = NULL;
+                treeSearchById(*root, &originalNode, selectedTask->id);
+                free(originalNode->task);
+                *root = treeRemoveNode(*root, originalNode);
+            }
+            else
+            {
+                if (msg != NULL)
+                {
+                    printMessage(msg);
+                    free(msg);
+                }
+            }
+            break;
+        }
+
+        case 4:
+            break;
+        }
+    }
+}
+
+bool matchID(TASK *task, void *context){
+    int targetId = *(int *)context;
+    return task->id == targetId;
+}
+
+bool matchKeyword(TASK *task, void *context){
+    char *keyword = (char *)context;
+    return strstr(task->description, keyword) != NULL;
 }
 
 void viewAllTasks(NODE **root)
@@ -403,123 +487,65 @@ void viewAllTasks(NODE **root)
         return;
     }
 
+    if(status == 4){
+        status = 0;
+    }
+
     NODE *orderedTree = NULL;
-    if (status == 4 && orderMode == ID)
+    if (status == 0 && orderMode == ID)
     {
         orderedTree = treeClone(*root);
     }
     else
     {
-        createSubTree(*root, &orderedTree, status, orderMode);
+        createSubTree(*root, &orderedTree, status, orderMode, NULL, NULL);
     }
 
-    while (1)
-    {
-        int numNodes = 0;
-        treeCountNodes(orderedTree, &numNodes);
-        int task = generateTaskMenuFromRB(orderedTree, numNodes);
+    viewTaskSubtree(root, &orderedTree, status, orderMode);
 
-        if (task == 0)
-        {
-            treeFree(orderedTree);
-            return;
-        }
+    treeFree(orderedTree);
+}
 
-        int currentIndex = 0;
-        NODE *selectedNode = treeGetNodeByIndex(orderedTree, &currentIndex, task);
-        TASK *selectedTask = selectedNode->task;
+void searchTasks(NODE **root){
+    int searchMode = generateMenu(3,
+    "Search by ID",
+    "Search by keyword",
+    "Go back");
 
-        int option = generateMenu(4,
-                                  "Update status",
-                                  "Update task data",
-                                  "Delete task",
-                                  "Go back");
-
-        char *msg = NULL;
-
-        switch (option)
-        {
-        case 1:
-        {
-            STATUS finalStatus;
-            if (!updateStatus(selectedTask, &msg, &finalStatus))
-            {
-                printMessage(msg);
-                free(msg);
-            }
-            else
-            {
-                if (status != 4)
-                {
-                    if ((int)finalStatus != status)
-                    {
-                        orderedTree = treeRemoveNode(orderedTree, selectedNode);
-                    }
-                }
-            }
-            break;
-        }
-
-        case 2:
-        {
-            TASK *taskCopy = malloc(sizeof(TASK));
-            if (!taskCopy)
-                break; 
-
-            *taskCopy = *selectedTask; 
-
-            if (!updateTask(taskCopy, &msg))
-            {
-                if (msg != NULL)
-                {
-                    printMessage(msg);
-                    free(msg);
-                }
+    switch(searchMode){
+        case 1:{
+            int targetId;
+            if(!searchByIdUI(&targetId)){
                 break;
             }
 
-            orderedTree = treeRemoveNode(orderedTree, selectedNode);
+            NODE *targetTree = NULL;
+            createSubTree(*root, &targetTree, 0, ID,
+            matchID, &targetId);
 
-            NODE *originalNode = NULL;
-            treeSearchById(*root, &originalNode, selectedTask->id);
-            if (originalNode != NULL)
-            {
-                free(selectedTask);
-                *root = treeRemoveNode(*root, originalNode);      
+            viewTaskSubtree(root, &targetTree, 0, ID);
+
+            treeFree(targetTree);
+            break;
+        }
+
+        case 2:{
+            char targetKeyword[100] = "";
+            if(!searchByKeywordUI(targetKeyword)){
+                break;
             }
 
-            treeInsert(&orderedTree, taskCopy, orderMode);
-            treeInsert(root, taskCopy, orderMode);
+            NODE *targetTree = NULL;
+            createSubTree(*root, &targetTree, 0, ID,
+            matchKeyword, targetKeyword);
 
-            selectedTask = taskCopy; 
+            viewTaskSubtree(root, &targetTree, 0, ID);
+            
+            treeFree(targetTree);
             break;
         }
 
         case 3:
-        {
-            if (deleteTask(selectedTask, &msg))
-            {
-                orderedTree = treeRemoveNode(orderedTree, selectedNode);
-
-                NODE *originalNode = NULL;
-                treeSearchById(*root, &originalNode, selectedTask->id);
-                *root = treeRemoveNode(*root, originalNode);
-                free(selectedTask);
-            }
-            else
-            {
-                if (msg != NULL)
-                {
-                    printMessage(msg);
-                    free(msg);
-                }
-            }
-            break;
-        }
-
-        case 4:
-            break;
-        }
+        return;
     }
-    treeFree(orderedTree);
 }

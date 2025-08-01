@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
@@ -15,8 +16,24 @@
 int serverSocket;
 volatile sig_atomic_t stopServer = 0;
 
-void initLastIdFileIfNotExists() {
-    FILE *fp = fopen("files/lastId.bin", "rb");
+void initFilesIfNotExists(){
+    FILE *fp = fopen("files/tasks.bin", "rb");
+    if(fp == NULL){
+        fp = fopen("files/tasks.bin", "wb");
+        fclose(fp);
+    } else {
+        fclose(fp);
+    }
+
+    fp = fopen("files/users.bin", "rb");
+    if(fp == NULL){
+        fp = fopen("files/users.bin", "wb");
+        fclose(fp);
+    } else {
+        fclose(fp);
+    }
+
+    fp = fopen("files/lastId.bin", "rb");
     if (fp == NULL) {
         fp = fopen("files/lastId.bin", "wb");
         int value = 0;
@@ -71,7 +88,7 @@ void *handleClient(void *arg){
 
 int main(){
     signal(SIGINT, handleSigint);
-    initLastIdFileIfNotExists();
+    initFilesIfNotExists();
     userCache_init();
 
     int *newSocket;

@@ -144,9 +144,9 @@ bool createAccountUI(char *userName, char *password, char *r_password)
             strcpy(warning, "Please write a valid password!");
             continue;
         }
-
-        mprintf("Repeat your password: ");
         fflush(stdout);
+        mprintf("Repeat your password: ");
+        
         if (!getInputLine(r_password, 50))
         {
             return false;
