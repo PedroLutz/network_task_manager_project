@@ -24,7 +24,7 @@ void initUser(){
 
 void loggedOutMenu(void){
     int option = generateMenu(3,
-        "Login to existing account",
+        "Log in to existing account",
         "Create new account",
         "Exit");
 
@@ -130,4 +130,5 @@ int main(){
             loggedInMenu();
         }
     }
+
 }
