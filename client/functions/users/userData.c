@@ -163,7 +163,7 @@ bool updateAccount(USER *user, char **msg){
 }
 
 bool deleteAccount(USER *user, char **msg){
-    if (!confirmationMenu("Are you sure you want to delete this task?"))
+    if (!confirmationMenu("Are you sure you want to delete your account and all your tasks?"))
     {
         return false;
     }
