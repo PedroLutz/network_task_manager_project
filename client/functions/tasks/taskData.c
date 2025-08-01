@@ -427,11 +427,10 @@ static void viewTaskSubtree(NODE **root, NODE **subTree, int status, ORDER_MODE 
         {
             if (deleteTask(selectedTask, &msg))
             {
-                free(selectedNode->task);
-                *subTree = treeRemoveNode(*subTree, selectedNode);
-
                 NODE *originalNode = NULL;
                 treeSearchById(*root, &originalNode, selectedTask->id);
+                free(selectedNode->task);
+                *subTree = treeRemoveNode(*subTree, selectedNode);
                 free(originalNode->task);
                 *root = treeRemoveNode(*root, originalNode);
             }
